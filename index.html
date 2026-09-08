@@ -356,7 +356,6 @@
 </head>
 <body>
 
-    <!-- Навбар с языками -->
     <nav>
         <div class="brand">
             <div class="flag-badge"></div>
@@ -382,7 +381,6 @@
                 <button class="add-article-btn" onclick="togglePublishForm()" id="btn-add-art">+ Напісаць артыкул</button>
             </div>
 
-            <!-- Форма публикаций -->
             <form id="publishForm" class="hidden" style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--card-border);">
                 <div class="form-group">
                     <label id="lbl-art-title">Загаловак артыкула</label>
@@ -391,7 +389,7 @@
 
                 <div class="form-group">
                     <label id="lbl-art-cat">Катэгорыя</label>
-                    <input type="text" id="postCategory" placeholder="напр. Навіны, Палітыка, Культура" value="Навіны">
+                    <input type="text" id="postCategory" placeholder="напр. Навіны, Палітикі, Культура" value="Навіны">
                 </div>
 
                 <div class="form-group">
@@ -451,7 +449,13 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Данные для переключения языка (Белорусский / Бобруйская Латинка)
+        // --- Конфигурация JSONBin и Telegram ---
+        const JSONBIN_BIN_ID = "6aa06567ffd5d16053eea795";
+        const JSONBIN_MASTER_KEY = "$2a$10$v5NJF/xt6byXe1mwVO/4l.HX1VlA8k2yS5LwwhSKLi16T5R.owsWe";
+        
+        const TELEGRAM_BOT_TOKEN = "8934571219:AAFOYZYBBgrLehXp0wdBI1hy94U4AEtRpss";
+        const TELEGRAM_CHAT_ID = "5458245536";
+
         const i18n = {
             be: {
                 title: "Бабрузія Сьогодні",
@@ -502,28 +506,44 @@
         };
 
         let currentLang = 'be';
+        let articles = [];
 
-        // --- Вставлены ваши данные Telegram бота ---
-        const TELEGRAM_BOT_TOKEN = "8934571219:AAFOYZYBBgrLehXp0wdBI1hy94U4AEtRpss";
-        const TELEGRAM_CHAT_ID = "5458245536";
+        // --- Загрузка новостей из JSONBin ---
+        async function fetchArticles() {
+            const grid = document.getElementById('articlesGrid');
+            grid.innerHTML = '<p style="color: var(--text-muted); text-align: center; grid-column: 1/-1;">Загрузка новостей из облака...</p>';
 
-        // --- Логика Новостей ---
-        const defaultArticles = [
-            {
-                id: 1,
-                title: "Афіцыйнае абвяшчэнне суверэнітэту Бабрузіі",
-                category: "Палітыка",
-                image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80",
-                content: "Сёння быў прыняты гістарычны акт аб суверэнітэце Дэмакратычнай Рэспублікі Бабрузія.",
-                date: "08 Вересня 2026"
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                });
+                const data = await res.json();
+                articles = data.record || [];
+                renderArticles();
+            } catch (err) {
+                console.error("Ошибка загрузки:", err);
+                grid.innerHTML = '<p style="color: var(--red); text-align: center; grid-column: 1/-1;">Ошибка подгрузки облачных новостей.</p>';
             }
-        ];
+        }
 
-        let articles = JSON.parse(localStorage.getItem('babruzia_articles')) || defaultArticles;
+        // --- Сохранение новостей в JSONBin ---
+        async function saveArticlesToCloud() {
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_MASTER_KEY
+                    },
+                    body: JSON.stringify(articles)
+                });
+            } catch (err) {
+                alert("Ошибка при сохранении статьи в облако!");
+            }
+        }
 
         function setLanguage(lang) {
             currentLang = lang;
-
             document.getElementById('btn-be').classList.toggle('active', lang === 'be');
             document.getElementById('btn-babr').classList.toggle('active', lang === 'babr');
 
@@ -581,11 +601,11 @@
             document.getElementById('publishForm').classList.toggle('hidden');
         }
 
-        function deleteArticle(id) {
-            if (confirm("Вы сапраўды хочаце видаліць гэты артыкул?")) {
+        async function deleteArticle(id) {
+            if (confirm("Видаліць гэты артыкул для ўсіх?")) {
                 articles = articles.filter(art => art.id !== id);
-                localStorage.setItem('babruzia_articles', JSON.stringify(articles));
                 renderArticles();
+                await saveArticlesToCloud();
             }
         }
 
@@ -596,35 +616,45 @@
 
             if (!file) return;
 
+            // Сжатие изображения перед загрузкой в облако
             const reader = new FileReader();
             reader.onload = function(e) {
-                const newArticle = {
-                    id: Date.now(),
-                    title: document.getElementById('postTitle').value,
-                    category: document.getElementById('postCategory').value || 'Навіны',
-                    image: e.target.result,
-                    content: document.getElementById('postContent').value,
-                    date: new Date().toLocaleDateString('be-BY', { day: '2-digit', month: 'long', year: 'numeric' })
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    const maxWidth = 800;
+                    const scaleSize = maxWidth / img.width;
+                    canvas.width = maxWidth;
+                    canvas.height = img.height * scaleSize;
+
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                    const newArticle = {
+                        id: Date.now(),
+                        title: document.getElementById('postTitle').value,
+                        category: document.getElementById('postCategory').value || 'Навіны',
+                        image: compressedBase64,
+                        content: document.getElementById('postContent').value,
+                        date: new Date().toLocaleDateString('be-BY', { day: '2-digit', month: 'long', year: 'numeric' })
+                    };
+
+                    articles.unshift(newArticle);
+                    renderArticles();
+                    document.getElementById('publishForm').reset();
+                    togglePublishForm();
+
+                    await saveArticlesToCloud();
                 };
-
-                articles.unshift(newArticle);
-                
-                try {
-                    localStorage.setItem('babruzia_articles', JSON.stringify(articles));
-                } catch (err) {
-                    alert("Занадта вялікае фота! Выберыце меншы файл.");
-                    return;
-                }
-
-                renderArticles();
-                document.getElementById('publishForm').reset();
-                togglePublishForm();
+                img.src = e.target.result;
             };
 
             reader.readAsDataURL(file);
         });
 
-        // --- Отправка заявки напрямую в Telegram ---
+        // --- Заявки в Telegram ---
         document.getElementById('citizenshipForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -681,7 +711,8 @@
         L.marker(babruziaCoords).addTo(map)
             .bindPopup("<b>Дэмакратычная Рэспубліка Бабрузія</b>").openPopup();
 
-        renderArticles();
+        // Инициализация загрузки статей при открытии
+        fetchArticles();
     </script>
 </body>
 </html>
