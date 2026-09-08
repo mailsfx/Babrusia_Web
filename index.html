@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="be">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babruzija Siohodnia — Афіцыйны партал</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        :root {
+            --red: #e63946;
+            --green: #2a9d8f;
+            --bg-dark: #0b0c10;
+            --card-bg: rgba(22, 25, 35, 0.75);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8f9fa;
+            --text-muted: #a0a5b5;
+            --apple-radius: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(230, 57, 70, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(42, 157, 143, 0.12) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 80px;
+        }
+
+        nav {
+            width: 90%;
+            max-width: 950px;
+            margin: 20px auto;
+            padding: 12px 24px;
+            background: rgba(15, 17, 23, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .flag-badge {
+            width: 30px;
+            height: 18px;
+            background: var(--red);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flag-badge::before, .flag-badge::after {
+            content: '';
+            position: absolute;
+            width: 140%;
+            height: 4px;
+            background: var(--green);
+        }
+        .flag-badge::before { transform: rotate(25deg); }
+        .flag-badge::after { transform: rotate(-25deg); }
+
+        .lang-switch {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 30px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lang-btn.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .hero {
+            text-align: center;
+            margin: 40px 20px 30px;
+            max-width: 750px;
+        }
+
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(180deg, #ffffff 0%, #a0a5b5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.1;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+
+        .main-container {
+            width: 90%;
+            max-width: 950px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--apple-radius);
+            padding: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .section-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .article-card {
+            background: rgba(15, 17, 23, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .article-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .article-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: #1a1d28;
+        }
+
+        .article-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .article-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--green);
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .article-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .article-excerpt {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+            flex-grow: 1;
+            white-space: pre-wrap;
+        }
+
+        .article-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .article-date {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .delete-btn {
+            background: rgba(230, 57, 70, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(230, 57, 70, 0.4);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: var(--red);
+            color: #fff;
+        }
+
+        .add-article-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid var(--card-border);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-article-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 14px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--green);
+            box-shadow: 0 0 0 4px rgba(42, 157, 143, 0.2);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--red) 0%, #b00e2e 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(230, 57, 70, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        #status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .status-success { background: rgba(42, 157, 143, 0.2); color: #64dfdf; border: 1px solid rgba(42, 157, 143, 0.3); }
+        .status-error { background: rgba(230, 57, 70, 0.2); color: #ff7b00; border: 1px solid rgba(230, 57, 70, 0.3); }
+
+        #map {
+            width: 100%;
+            height: 320px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Навбар с языками -->
+    <nav>
+        <div class="brand">
+            <div class="flag-badge"></div>
+            <span>Babruzija Today</span>
+        </div>
+        <div class="lang-switch">
+            <button class="lang-btn active" id="btn-be" onclick="setLanguage('be')">Беларуская</button>
+            <button class="lang-btn" id="btn-babr" onclick="setLanguage('babr')">Łacinka</button>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1 id="site-title">Бабрузія Сьогодні</h1>
+        <p id="site-subtitle">Афіцыйны інфармацыйны партал Дэмакратычнай Рэспублікі Бабрузія</p>
+    </section>
+
+    <main class="main-container">
+
+        <!-- Секция Новостей -->
+        <div class="glass-card">
+            <div class="section-header">
+                <h2 id="news-title">Навіны і артыкулы</h2>
+                <button class="add-article-btn" onclick="togglePublishForm()" id="btn-add-art">+ Напісаць артыкул</button>
+            </div>
+
+            <!-- Форма публикаций -->
+            <form id="publishForm" class="hidden" style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--card-border);">
+                <div class="form-group">
+                    <label id="lbl-art-title">Загаловак артыкула</label>
+                    <input type="text" id="postTitle" required placeholder="напр. Новы ўказ прэзідэнта Бабрузіі">
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-art-cat">Катэгорыя</label>
+                    <input type="text" id="postCategory" placeholder="напр. Навіны, Палітыка, Культура" value="Навіны">
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-art-img">Фота з прылады</label>
+                    <input type="file" id="postImageFile" accept="image/*" required>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-art-content">Змест артыкула</label>
+                    <textarea id="postContent" rows="5" required placeholder="Тэкст артыкула..."></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn" id="btn-publish">Опублікаваць</button>
+            </form>
+
+            <div class="articles-grid" id="articlesGrid"></div>
+        </div>
+
+        <!-- Секция подачи заявки на гражданство -->
+        <div class="glass-card">
+            <div class="section-header">
+                <h2 id="citizenship-title">Заяўка на грамадзянства</h2>
+            </div>
+
+            <form id="citizenshipForm">
+                <div class="form-group">
+                    <label id="lbl-name" for="applicantName">Імя і Прозвішча</label>
+                    <input type="text" id="applicantName" required placeholder="напр. Якуб Колас">
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-handle" for="applicantHandle">Telegram Кантакты</label>
+                    <input type="text" id="applicantHandle" required placeholder="@username">
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-reason" for="applicantReason">Прычына атрымання грамадзянства</label>
+                    <textarea id="applicantReason" rows="4" required placeholder="Чаму вы хочаце стаць грамадзянінам Бабрузіі?"></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn" id="btn-submit-app">Падаць заяўку</button>
+            </form>
+
+            <div id="status"></div>
+        </div>
+
+        <!-- Карта -->
+        <div class="glass-card">
+            <div class="section-header">
+                <h2 id="map-title">Дзяржаўная тэрыторыя</h2>
+            </div>
+            <div id="map"></div>
+        </div>
+
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Данные для переключения языка (Белорусский / Бобруйская Латинка)
+        const i18n = {
+            be: {
+                title: "Бабрузія Сьогодні",
+                subtitle: "Афіцыйны інфармацыйны партал Дэмакратычнай Рэспублікі Бабрузія",
+                newsTitle: "Навіны і артыкулы",
+                btnAddArt: "+ Напісаць артыкул",
+                lblArtTitle: "Загаловак артыкула",
+                lblArtCat: "Катэгорыя",
+                lblArtImg: "Фота з прылады",
+                lblArtContent: "Змест артыкула",
+                btnPublish: "Опублікаваць",
+                citizenshipTitle: "Заяўка на грамадзянства",
+                lblName: "Імя і Прозвішча",
+                phName: "напр. Якуб Колас",
+                lblHandle: "Telegram Кантакты",
+                lblReason: "Прычына атрымання грамадзянства",
+                phReason: "Чаму вы хочаце стаць грамадзянінам Бабрузіі?",
+                btnSubmitApp: "Падаць заяўку",
+                mapTitle: "Дзяржаўная тэрыторыя",
+                btnDelete: "Видаліць",
+                sending: "Адпраўка заяўкі...",
+                success: "Заяўка паспяхова адпраўлена ў Telegram!",
+                error: "Памылка адпраўкі заяўкі."
+            },
+            babr: {
+                title: "Babruzija Siohodnia",
+                subtitle: "Aficijny informacyjny portal Demakratycznaj Reśpubliki Babruzija",
+                newsTitle: "Naviny i artykuły",
+                btnAddArt: "+ Napisać artykuł",
+                lblArtTitle: "Zahałovak artykuła",
+                lblArtCat: "Kateroryja",
+                lblArtImg: "Foła z pryłady",
+                lblArtContent: "Źmiest artykuła",
+                btnPublish: "Apublikavać",
+                citizenshipTitle: "Zajavka na hramadzianstva",
+                lblName: "Imia i Proźviszcza",
+                phName: "naprykład: Czlen Partii",
+                lblHandle: "Telegram (@username)",
+                lblReason: "Pryczyna atrymańnia hramadzianstva",
+                phReason: "Z jakoha qasu szukajesz pashpart Babruzii?",
+                btnSubmitApp: "Padać zajavku",
+                mapTitle: "Dzyrzaūnaja terytoryja",
+                btnDelete: "Vydalić",
+                sending: "Adpraūka zajavki...",
+                success: "Zajavka paśpiaszna adpraūłena ū Telegram!",
+                error: "Pamyłka adpraūki zajavki."
+            }
+        };
+
+        let currentLang = 'be';
+
+        // --- Вставлены ваши данные Telegram бота ---
+        const TELEGRAM_BOT_TOKEN = "8934571219:AAFOYZYBBgrLehXp0wdBI1hy94U4AEtRpss";
+        const TELEGRAM_CHAT_ID = "5458245536";
+
+        // --- Логика Новостей ---
+        const defaultArticles = [
+            {
+                id: 1,
+                title: "Афіцыйнае абвяшчэнне суверэнітэту Бабрузіі",
+                category: "Палітыка",
+                image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80",
+                content: "Сёння быў прыняты гістарычны акт аб суверэнітэце Дэмакратычнай Рэспублікі Бабрузія.",
+                date: "08 Вересня 2026"
+            }
+        ];
+
+        let articles = JSON.parse(localStorage.getItem('babruzia_articles')) || defaultArticles;
+
+        function setLanguage(lang) {
+            currentLang = lang;
+
+            document.getElementById('btn-be').classList.toggle('active', lang === 'be');
+            document.getElementById('btn-babr').classList.toggle('active', lang === 'babr');
+
+            document.getElementById('site-title').innerText = i18n[lang].title;
+            document.getElementById('site-subtitle').innerText = i18n[lang].subtitle;
+            document.getElementById('news-title').innerText = i18n[lang].newsTitle;
+            document.getElementById('btn-add-art').innerText = i18n[lang].btnAddArt;
+            document.getElementById('lbl-art-title').innerText = i18n[lang].lblArtTitle;
+            document.getElementById('lbl-art-cat').innerText = i18n[lang].lblArtCat;
+            document.getElementById('lbl-art-img').innerText = i18n[lang].lblArtImg;
+            document.getElementById('lbl-art-content').innerText = i18n[lang].lblArtContent;
+            document.getElementById('btn-publish').innerText = i18n[lang].btnPublish;
+
+            document.getElementById('citizenship-title').innerText = i18n[lang].citizenshipTitle;
+            document.getElementById('lbl-name').innerText = i18n[lang].lblName;
+            document.getElementById('applicantName').placeholder = i18n[lang].phName;
+            document.getElementById('lbl-handle').innerText = i18n[lang].lblHandle;
+            document.getElementById('lbl-reason').innerText = i18n[lang].lblReason;
+            document.getElementById('applicantReason').placeholder = i18n[lang].phReason;
+            document.getElementById('btn-submit-app').innerText = i18n[lang].btnSubmitApp;
+            document.getElementById('map-title').innerText = i18n[lang].mapTitle;
+
+            renderArticles();
+        }
+
+        function renderArticles() {
+            const grid = document.getElementById('articlesGrid');
+            grid.innerHTML = '';
+
+            if (articles.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-muted); text-align: center; grid-column: 1/-1;">Пакуль няма апублікаваных артыкулаў.</p>';
+                return;
+            }
+
+            articles.forEach(art => {
+                const card = document.createElement('div');
+                card.className = 'article-card';
+                card.innerHTML = `
+                    <img src="${art.image}" alt="${art.title}" class="article-image">
+                    <div class="article-body">
+                        <div class="article-tag">${art.category}</div>
+                        <h3 class="article-title">${art.title}</h3>
+                        <p class="article-excerpt">${art.content}</p>
+                        <div class="article-footer">
+                            <span class="article-date">${art.date}</span>
+                            <button class="delete-btn" onclick="deleteArticle(${art.id})">${i18n[currentLang].btnDelete}</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function togglePublishForm() {
+            document.getElementById('publishForm').classList.toggle('hidden');
+        }
+
+        function deleteArticle(id) {
+            if (confirm("Вы сапраўды хочаце видаліць гэты артыкул?")) {
+                articles = articles.filter(art => art.id !== id);
+                localStorage.setItem('babruzia_articles', JSON.stringify(articles));
+                renderArticles();
+            }
+        }
+
+        document.getElementById('publishForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('postImageFile');
+            const file = fileInput.files[0];
+
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const newArticle = {
+                    id: Date.now(),
+                    title: document.getElementById('postTitle').value,
+                    category: document.getElementById('postCategory').value || 'Навіны',
+                    image: e.target.result,
+                    content: document.getElementById('postContent').value,
+                    date: new Date().toLocaleDateString('be-BY', { day: '2-digit', month: 'long', year: 'numeric' })
+                };
+
+                articles.unshift(newArticle);
+                
+                try {
+                    localStorage.setItem('babruzia_articles', JSON.stringify(articles));
+                } catch (err) {
+                    alert("Занадта вялікае фота! Выберыце меншы файл.");
+                    return;
+                }
+
+                renderArticles();
+                document.getElementById('publishForm').reset();
+                togglePublishForm();
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        // --- Отправка заявки напрямую в Telegram ---
+        document.getElementById('citizenshipForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = '';
+            statusDiv.innerText = i18n[currentLang].sending;
+
+            const name = document.getElementById('applicantName').value;
+            const handle = document.getElementById('applicantHandle').value;
+            const reason = document.getElementById('applicantReason').value;
+
+            const text = `📬 *Новая заяўка на грамадзянства Бабрузіі!*\n\n` +
+                         `👤 *Імя:* ${name}\n` +
+                         `💬 *Telegram:* ${handle}\n` +
+                         `📝 *Прычына:* ${reason}\n` +
+                         `🌐 *Мова:* ${currentLang}`;
+
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: text,
+                        parse_mode: 'Markdown'
+                    })
+                });
+
+                if (response.ok) {
+                    statusDiv.className = 'status-success';
+                    statusDiv.innerText = i18n[currentLang].success;
+                    document.getElementById('citizenshipForm').reset();
+                } else {
+                    statusDiv.className = 'status-error';
+                    statusDiv.innerText = i18n[currentLang].error;
+                }
+            } catch (err) {
+                statusDiv.className = 'status-error';
+                statusDiv.innerText = i18n[currentLang].error;
+            }
+        });
+
+        // --- Карта ---
+        const babruziaCoords = [53.956630, 27.742496];
+        const map = L.map('map', { zoomControl: false }).setView(babruziaCoords, 18);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            subdomains: 'abcd'
+        }).addTo(map);
+
+        L.marker(babruziaCoords).addTo(map)
+            .bindPopup("<b>Дэмакратычная Рэспубліка Бабрузія</b>").openPopup();
+
+        renderArticles();
+    </script>
+</body>
+</html>
