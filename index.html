@@ -672,7 +672,7 @@
                          `📝 *Прычына:* ${reason}\n` +
                          `🌐 *Мова:* ${currentLang}`;
 
-            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+            const url = `https://corsproxy.io/?` + encodeURIComponent(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`);
 
             try {
                 const response = await fetch(url, {
@@ -710,7 +710,7 @@
 
         L.marker(babruziaCoords).addTo(map)
             .bindPopup("<b>Дэмакратычная Рэспубліка Бабрузія</b>").openPopup();
-
+        
         // Инициализация загрузки статей при открытии
         fetchArticles();
     </script>
