@@ -389,7 +389,7 @@
 
                 <div class="form-group">
                     <label id="lbl-art-cat">Катэгорыя</label>
-                    <input type="text" id="postCategory" placeholder="напр. Навіны, Палітыкі, Культура" value="Навіны">
+                    <input type="text" id="postCategory" placeholder="напр. Навіны, Палітикі, Культура" value="Навіны">
                 </div>
 
                 <div class="form-group">
@@ -450,7 +450,7 @@
 
     <script>
         // --- Конфигурация JSONBin и Telegram ---
-        const JSONBIN_BIN_ID = "6aa0671bffd5d16053eead4c"; // Укажите актуальный BIN_ID
+        const JSONBIN_BIN_ID = "6aa0671bffd5d16053eead4c"; 
         const JSONBIN_MASTER_KEY = "$2a$10$v5NJF/xt6byXe1mwVO/4l.HX1VlA8k2yS5LwwhSKLi16T5R.owsWe";
         
         const TELEGRAM_BOT_TOKEN = "8934571219:AAFOYZYBBgrLehXp0wdBI1hy94U4AEtRpss";
@@ -616,7 +616,6 @@
 
             if (!file) return;
 
-            // Сжатие изображения перед загрузкой в облако
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
@@ -654,7 +653,7 @@
             reader.readAsDataURL(file);
         });
 
-        // --- Заявки в Telegram ---
+        // --- Прямая отправка заявок в Telegram (без сторонних CORS-прокси) ---
         document.getElementById('citizenshipForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -672,7 +671,7 @@
                          `📝 *Прычына:* ${reason}\n` +
                          `🌐 *Мова:* ${currentLang}`;
 
-            const url = `https://corsproxy.io/?` + encodeURIComponent(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`);
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
             try {
                 const response = await fetch(url, {
@@ -711,7 +710,6 @@
         L.marker(babruziaCoords).addTo(map)
             .bindPopup("<b>Дэмакратычная Рэспубліка Бабрузія</b>").openPopup();
         
-        // Инициализация загрузки статей при открытии
         fetchArticles();
     </script>
 </body>
